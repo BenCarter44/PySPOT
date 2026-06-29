@@ -16,10 +16,12 @@ import datetime
 import io
 import math
 import os
+from pathlib import Path
+import shutil
 from subprocess import Popen, PIPE
 import re
 import random
-from typing import Optional
+from typing import Optional, cast
 import stat
 
 
@@ -372,11 +374,19 @@ class FileWooF:
 
 
 class WooF:
-    def __init__(self, name, bin_path=".", is_jumbo=False):
+    def __init__(self, name, bin_path=None, is_jumbo=False):
         self.name = name
-        self.bin = bin_path
+
+        if bin_path is None:
+            found = shutil.which("senspot-get")
+            if found is None:
+                raise OSError("senspot is not installed!")
+            self.bin = str(Path(found).parent)
+        else:
+            self.bin = cast(str, bin_path)
         if self.bin[-1] == "/":
             self.bin = self.bin[0:-1]
+
         self.jumbo = is_jumbo
 
     def WooFCreate(self, element_size, history_size):
@@ -465,10 +475,10 @@ class WooF:
         # TODO: Return seq no
         return -1
 
-    def WooFGet(self, type, seq_no=-1, seq_len=1) -> WooFItem | None:
-        return self.WooFGets(type, seq_no, seq_len=1)[0]
+    def WooFGet(self, type, seq_no=-1) -> WooFItem | None:
+        return self.WooFGets(type, seq_no, items=1)[0]
 
-    def WooFGets(self, type, seq_no=-1, seq_len=1) -> list[WooFItem | None]:
+    def WooFGets(self, type, seq_no=-1, items=1) -> list[WooFItem | None]:
         # Run `senspot_get -W woof://path/to/woof`
         cmd = f"{self.bin}/senspot-get"
         if self.jumbo:
@@ -476,12 +486,12 @@ class WooF:
 
         if seq_no == -1:
             proc = Popen(
-                [cmd, "-W", self.name, "-C", str(seq_len)], stdout=PIPE, stderr=PIPE
+                [cmd, "-W", self.name, "-C", str(items)], stdout=PIPE, stderr=PIPE
             )
         else:
             sn = str(seq_no)
             proc = Popen(
-                [cmd, "-W", self.name, "-S", sn, "-C", str(seq_len)],
+                [cmd, "-W", self.name, "-S", sn, "-C", str(items)],
                 stdout=PIPE,
                 stderr=PIPE,
             )
