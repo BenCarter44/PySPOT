@@ -86,9 +86,16 @@ class FileWooFItem:
 
 class FileWooF:
     # for senspot-file. Has get and put for WooF-like access
-    def __init__(self, name, bin_path="."):
+    def __init__(self, name, bin_path=None):
         self.name = name
-        self.bin = bin_path
+
+        if bin_path is None:
+            found = shutil.which("senspot-file-send")
+            if found is None:
+                raise OSError("senspot is not installed!")
+            self.bin = str(Path(found).parent)
+        else:
+            self.bin = cast(str, bin_path)
         if self.bin[-1] == "/":
             self.bin = self.bin[0:-1]
 
