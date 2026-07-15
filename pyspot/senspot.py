@@ -118,11 +118,11 @@ class FileWooF:
 
         return result.decode("latin-1")
 
-    def get(self, version_no=-1, start_seq_no=-1, scan_start_seq_no=-1) -> WooFItem:
+    def get(self, version_no=-1, end_seq_no=-1, scan_start_seq_no=-1) -> WooFItem:
         # same as WooFGet but for bigger items. Emulates WooF but for any size elements
         fd = os.memfd_create(f"sf_vwoof_{random.randint(0,1000000)}")
         path = f"/proc/self/fd/{fd}"
-        item = self.recv(path, version_no, start_seq_no, scan_start_seq_no, pass_fd=fd)
+        item = self.recv(path, version_no, end_seq_no, scan_start_seq_no, pass_fd=fd)
         os.lseek(fd, 0, os.SEEK_SET)
         chunks = []
         chunk = os.read(fd, 1024 * 256)
@@ -171,7 +171,7 @@ class FileWooF:
         pass_fd=None,
     ):
 
-        if scan_start_seq_no < end_seq_no:
+        if scan_start_seq_no > 0 and scan_start_seq_no < end_seq_no:
             raise ValueError(
                 "Scan is set to start prior to the start seq, meaning the file will always be skipped"
             )
